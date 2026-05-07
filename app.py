@@ -1,5 +1,5 @@
 import streamlit as st
-from PIL import Imaga
+from PIL import Image
 import pytesseract
 
 # כותרת
