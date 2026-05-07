@@ -1,43 +1,36 @@
 import streamlit as st
-import easyocr
 from PIL import Image
-import numpy as np
+import pytesseract
 
-st.set_page_config(page_title="סורק קבלות להעתקה")
+st.set_page_config(page_title="סורק קבלות יציב", layout="centered")
 
-st.title("📋 סורק קבלות להעתקה מהירה")
-st.write("העלה תמונה והטקסט יופיע בתיבה עם כפתור העתקה.")
+st.title("📋 סורק קבלות - גרסה יציבה")
+st.write("העלה תמונה והטקסט יופיע למטה בתיבה הניתנת להעתקה.")
 
-uploaded_file = st.file_uploader("בחר תמונה...", type=["jpg", "jpeg", "png"])
+uploaded_file = st.file_uploader("בחר תמונת קבלה...", type=["jpg", "jpeg", "png"])
 
 if uploaded_file is not None:
     image = Image.open(uploaded_file)
     st.image(image, caption='הקבלה המקורית', use_container_width=True)
     
-    with st.spinner('ה-AI מנתח... (בפעם הראשונה זה לוקח זמן, אל תסגור)'):
+    with st.spinner('מחלץ טקסט...'):
         try:
-            # המרת התמונה
-            img_array = np.array(image)
+            # חילוץ טקסט בעברית ובאנגלית
+            text = pytesseract.image_to_string(image, lang='heb+eng')
             
-            # טעינת המודל - הוספתי הגנה למקרה שעברית נכשלת
-            try:
-                reader = easyocr.Reader(['he', 'en'], gpu=False)
-            except:
-                reader = easyocr.Reader(['en'], gpu=False)
-                st.warning("עובד במצב אנגלית בלבד עקב תקלה זמנית בשפה העברית.")
-
-            result = reader.readtext(img_array, detail=0)
-            
-            if result:
-                full_text = "\n".join(result)
+            if text.strip():
+                st.success("הטקסט חולץ בהצלחה!")
+                # תיבה להעתקה מהירה
+                st.subheader("סמן והעתק מכאן:")
+                st.text_area(label="תוצאה:", value=text, height=400)
                 
-                st.subheader("תוצאה להעתקה (לחץ על האייקון מצד ימין):")
-                # השימוש ב-st.code נותן כפתור העתקה מובנה!
-                st.code(full_text, language="text")
-                
-                st.download_button("הורד כקובץ TXT", full_text)
+                # כפתור הורדה
+                st.download_button("הורד כקובץ TXT", text)
             else:
-                st.warning("לא זוהה טקסט.")
-                
+                st.warning("לא זוהה טקסט ברור בתמונה.")
         except Exception as e:
-            st.error(f"שגיאה בתהליך: {e}")
+            st.error(f"שגיאה בעיבוד: {e}")
+            st.info("ודא שיצרת קובץ בשם packages.txt עם התוכן המתאים.")
+
+else:
+    st.info("ממתין לקובץ...")
