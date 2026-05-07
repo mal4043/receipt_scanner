@@ -1,6 +1,5 @@
 streamlit
-easyocr
+easyocr==1.6.2
 opencv-python-headless
 pillow
 numpy
-
