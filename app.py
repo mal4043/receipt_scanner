@@ -1,31 +1,45 @@
 import streamlit as st
+import easyocr
 from PIL import Image
-import pytesseract
+import numpy as np
 
-# כותרת
-st.title("סורק קבלות - העתקת טקסט 📋")
+st.set_page_config(page_title="סורק קבלות להעתקה")
 
-# העלאת תמונה
-uploaded_file = st.file_uploader("העלה קבלה...", type=["jpg", "jpeg", "png"])
+st.title("📋 סורק קבלות להעתקה מהירה")
+st.write("העלה תמונה והטקסט יופיע בתיבה למטה.")
+
+uploaded_file = st.file_uploader("בחר תמונה...", type=["jpg", "jpeg", "png"])
 
 if uploaded_file is not None:
     image = Image.open(uploaded_file)
-    st.image(image, caption='הקבלה', use_column_width=True)
+    st.image(image, caption='הקבלה המקורית', use_container_width=True)
     
-    with st.spinner('מחלץ טקסט...'):
-        # חילוץ הטקסט (תומך בעברית ואנגלית)
-        # הערה: בשרתים מסוימים יש להתקין חבילת שפה, כאן זה ינסה לקרוא מה שיש
+    with st.spinner('מנתח טקסט (זה עשוי לקחת חצי דקה בפעם הראשונה)...'):
         try:
-            text = pytesseract.image_to_string(image, lang='heb+eng')
-        except:
-            text = pytesseract.image_to_string(image, lang='eng')
-
-        if text.strip():
-            st.subheader("הטקסט שחולץ (ניתן להעתקה):")
-            # יצירת תיבת טקסט שניתן לסמן ולהעתיק ממנה
-            st.text_area("סמן והעתק מכאן:", text, height=300)
+            # המרת התמונה לפורמט מתאים
+            img_array = np.array(image)
             
-            # כפתור הורדה כבונוס
-            st.download_button("הורד כקובץ טקסט", text)
-        else:
-            st.warning("לא זוהה טקסט בתמונה.")
+            # הפעלת ה-OCR - נשתמש באנגלית כברירת מחדל אם עברית נכשלת
+            reader = easyocr.Reader(['en', 'he'])
+            result = reader.readtext(img_array, detail=0)
+            
+            if result:
+                st.success("הטקסט מוכן!")
+                
+                # חיבור כל השורות לטקסט אחד ארוך
+                full_text = "\n".join(result)
+                
+                # --- החלק החשוב: תיבה להעתקה ---
+                st.subheader("סמן והעתק את הטקסט מכאן:")
+                st.text_area(label="תוצאה:", value=full_text, height=400)
+                
+                st.download_button("הורד כקובץ טקסט", full_text)
+            else:
+                st.warning("לא נמצא טקסט בתמונה.")
+                
+        except Exception as e:
+            st.error(f"שגיאה: {e}")
+            st.info("נסה לרענן את הדף או להעלות תמונה ברורה יותר.")
+
+else:
+    st.info("אנא העלה קובץ כדי להתחיל.")
