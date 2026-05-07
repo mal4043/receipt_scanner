@@ -1,36 +1,41 @@
 import streamlit as st
+import google.generativeai as genai
 from PIL import Image
-import pytesseract
 
-st.set_page_config(page_title="סורק קבלות יציב", layout="centered")
+# הגדרת ה-API KEY (מומלץ לאחסן את המפתח ב-Secrets של Streamlit)
+API_KEY = "הכנס כאן את המפתח שקיבלת מגוגל"
+genai.configure(api_key=API_KEY)
 
-st.title("📋 סורק קבלות - גרסה יציבה")
-st.write("העלה תמונה והטקסט יופיע למטה בתיבה הניתנת להעתקה.")
+st.title("סורק קבלות חכם 🤖")
 
-uploaded_file = st.file_uploader("בחר תמונת קבלה...", type=["jpg", "jpeg", "png"])
+uploaded_file = st.file_uploader("העלה קבלה...", type=["jpg", "jpeg", "png"])
 
 if uploaded_file is not None:
     image = Image.open(uploaded_file)
-    st.image(image, caption='הקבלה המקורית', use_container_width=True)
+    st.image(image, caption='הקבלה שהועלתה', use_container_width=True)
     
-    with st.spinner('מחלץ טקסט...'):
-        try:
-            # חילוץ טקסט בעברית ובאנגלית
-            text = pytesseract.image_to_string(image, lang='heb+eng')
-            
-            if text.strip():
-                st.success("הטקסט חולץ בהצלחה!")
-                # תיבה להעתקה מהירה
-                st.subheader("סמן והעתק מכאן:")
-                st.text_area(label="תוצאה:", value=text, height=400)
+    if st.button("חלץ נתונים"):
+        with st.spinner('ה-AI מנתח את הקבלה...'):
+            try:
+                # הגדרת המודל
+                model = genai.GenerativeModel('gemini-1.5-flash')
                 
-                # כפתור הורדה
-                st.download_button("הורד כקובץ TXT", text)
-            else:
-                st.warning("לא זוהה טקסט ברור בתמונה.")
-        except Exception as e:
-            st.error(f"שגיאה בעיבוד: {e}")
-            st.info("ודא שיצרת קובץ בשם packages.txt עם התוכן המתאים.")
+                # ההנחיה (Prompt) - כאן אתה קובע מה אתה רוצה לקבל
+                prompt = """
+                תנתח את תמונת הקבלה הזו ותחזיר לי רק את הפרטים הבאים בטקסט נקי:
+                1. שם העסק
+                2. תאריך
+                3. סכום כולל לתשלום
+                4. מספר ח"פ (אם מופיע)
+                """
+                
+                response = model.generate_content([prompt, image])
+                
+                st.success("הנתונים חולצו:")
+                # תיבת טקסט שניתן להעתיק ממנה
+                st.text_area("נתוני הקבלה:", response.text, height=200)
+                
+            except Exception as e:
+                st.error(f"שגיאה: {e}")
 
-else:
-    st.info("ממתין לקובץ...")
+# הערה: מחק את קובץ packages.txt אם יצרת אותו, הוא לא נחוץ יותר
