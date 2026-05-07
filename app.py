@@ -3,29 +3,56 @@ import easyocr
 from PIL import Image
 import numpy as np
 
-st.title("סורק קבלות חכם 📄")
-st.write("העלה תמונה של קבלה וה-AI יחלץ את הטקסט")
+# הגדרת כותרת האפליקציה
+st.set_page_config(page_title="סורק קבלות AI", layout="centered")
 
-# העלאת קובץ
-uploaded_file = st.file_uploader("בחר תמונת קבלה...", type=["jpg", "jpeg", "png"])
+st.title("📄 סורק קבלות חכם למנהל חשבונות")
+st.write("העלה תמונה של קבלה והמערכת תחלץ את הטקסט באופן אוטומטי.")
+
+# כפתור להעלאת קובץ
+uploaded_file = st.file_uploader("בחר תמונת קבלה (JPG, PNG)...", type=["jpg", "jpeg", "png"])
 
 if uploaded_file is not None:
-    # הצגת התמונה
+    # 1. הצגת התמונה שהועלתה
     image = Image.open(uploaded_file)
     st.image(image, caption='הקבלה שהועלתה', use_column_width=True)
     
-    with st.spinner('מנתח את הקבלה...'):
-        # המרת התמונה לפורמט שהספריה מבינה
-        img_array = np.array(image)
-        
-        # הפעלת ה-OCR (תומך בעברית ואנגלית)
-        reader = easyocr.Reader(['he', 'en'])
-        result = reader.readtext(img_array, detail=0)
-        
-        # הצגת התוצאות
-        st.subheader("הטקסט שזוהה:")
-        full_text = "\n".join(result)
-        st.text_area("תוצאה:", full_text, height=300)
-        
-        # כפתור הורדה כקובץ טקסט
-        st.download_button("הורד כקובץ TXT", full_text, file_name="receipt.txt")
+    st.write("---")
+    
+    # 2. תחילת תהליך ה-AI
+    with st.spinner('ה-AI מנתח את הטקסט... זה יכול לקחת כמה שניות...'):
+        try:
+            # המרת התמונה לפורמט עבודה של ה-AI
+            img_array = np.array(image)
+            
+            # הגדרת ה-OCR לקריאת עברית ואנגלית
+            reader = easyocr.Reader(['he', 'en'])
+            
+            # ביצוע הקריאה בפועל
+            result = reader.readtext(img_array, detail=0)
+            
+            # 3. הצגת התוצאות למשתמש
+            if result:
+                st.success("✅ הטקסט חולץ בהצלחה!")
+                st.subheader("הטקסט שנמצא:")
+                
+                # הדפסת כל שורה שנמצאה
+                for line in result:
+                    st.write(f"🔹 {line}")
+                
+                # כפתור להורדת כל הטקסט כקובץ
+                full_text = "\n".join(result)
+                st.download_button(
+                    label="הורד את הטקסט כקובץ TXT",
+                    data=full_text,
+                    file_name="receipt_data.txt",
+                    mime="text/plain"
+                )
+            else:
+                st.warning("לא הצלחתי לזהות טקסט בתמונה. נסה לצלם ממרחק קרוב יותר או בתאורה טובה יותר.")
+                
+        except Exception as e:
+            st.error(f"אירעה שגיאה בעיבוד התמונה: {e}")
+
+else:
+    st.info("ממתין להעלאת קבלה...")
