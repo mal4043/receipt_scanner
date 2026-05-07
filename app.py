@@ -3,7 +3,7 @@ import google.generativeai as genai
 from PIL import Image
 
 # הגדרת ה-API KEY (מומלץ לאחסן את המפתח ב-Secrets של Streamlit)
-API_KEY = "הכנס כאן את המפתח שקיבלת מגוגל"
+API_KEY = "AIzaSyCuKx7oRY9G1pIzy8wV9yU7xuDvAJ90vXY"
 genai.configure(api_key=API_KEY)
 
 st.title("סורק קבלות חכם 🤖")
